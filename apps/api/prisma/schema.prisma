@@ -1,0 +1,296 @@
+// ──────────────────────────────────────────────────────────────
+// FarmaTuc — Prisma Schema
+// ──────────────────────────────────────────────────────────────
+// Materialización de /packages/types en PostgreSQL.
+// Cada modelo tiene correlación 1:1 con su interfaz TypeScript.
+// ──────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Medicamento ──────────────────────────────────────────────
+
+model Medicamento {
+  id                 String            @id @default(uuid()) @db.Uuid
+  nombreComercial    String            @map("nombre_comercial")
+  principioActivo    String            @map("principio_activo")
+  concentracion      String
+  formaFarmaceutica  FormaFarmaceutica @map("forma_farmaceutica")
+  laboratorio        String
+  codigoBarras       String?           @unique @map("codigo_barras")
+  codigoANMAT        String?           @unique @map("codigo_anmat")
+  requiereReceta     Boolean           @default(false) @map("requiere_receta")
+  precioUnitario     Decimal           @map("precio_unitario") @db.Decimal(10, 2)
+  activo             Boolean           @default(true)
+  categoriaTerapeutica String          @map("categoria_terapeutica")
+  stockMinimo        Int               @default(5) @map("stock_minimo")
+  observaciones      String?
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  // Relaciones
+  lotes              Lote[]
+  detallesVenta      DetalleVenta[]
+  alertas            AlertaInventario[]
+
+  @@index([principioActivo])
+  @@index([categoriaTerapeutica])
+  @@index([activo])
+  @@map("medicamentos")
+}
+
+enum FormaFarmaceutica {
+  comprimido
+  capsula
+  jarabe
+  suspension_oral
+  crema
+  pomada
+  gel
+  supositorio
+  ampolla
+  spray
+  colirio
+  gotas
+  polvo
+  inhador
+  parche
+  otro
+}
+
+// ── Lote ─────────────────────────────────────────────────────
+
+model Lote {
+  id                 String    @id @default(uuid()) @db.Uuid
+  medicamentoId      String    @map("medicamento_id") @db.Uuid
+  numeroLote         String    @map("numero_lote")
+  fechaVencimiento   DateTime  @map("fecha_vencimiento")
+  fechaFabricacion   DateTime  @map("fecha_fabricacion")
+  stock              Int
+  stockInicial       Int       @map("stock_inicial")
+  precioCompra       Decimal   @map("precio_compra") @db.Decimal(10, 2)
+  proveedor          String
+  numeroFactura      String?   @map("numero_factura")
+  estado             EstadoLote @default(disponible)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  medicamento        Medicamento @relation(fields: [medicamentoId], references: [id])
+  detallesVenta      DetalleVenta[]
+  alertas            AlertaInventario[]
+
+  @@index([medicamentoId])
+  @@index([fechaVencimiento])
+  @@index([estado])
+  @@unique([medicamentoId, numeroLote])
+  @@map("lotes")
+}
+
+enum EstadoLote {
+  disponible
+  reservado
+  vencido
+  agotado
+  retirado
+}
+
+// ── Obra Social ──────────────────────────────────────────────
+
+model ObraSocial {
+  id                             String   @id @default(uuid()) @db.Uuid
+  nombre                         String   @unique
+  sigla                          String?
+  porcentajeCobertura            Decimal  @map("porcentaje_cobertura") @db.Decimal(5, 2)
+  tieneTope                      Boolean  @default(false) @map("tiene_tope")
+  topeMaximoPorMedicamento       Decimal? @map("tope_maximo_por_medicamento") @db.Decimal(10, 2)
+  restriccionPorCategoria        Boolean  @default(false) @map("restriccion_por_categoria")
+  categoriasCubiertas            String[] @default([]) @map("categorias_cubiertas")
+  requiereAfiliado               Boolean  @default(true) @map("requiere_afiliado")
+  activa                         Boolean  @default(true)
+  observaciones                  String?
+  createdAt                      DateTime @default(now()) @map("created_at")
+  updatedAt                      DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  pacientes  Paciente[]
+  ventas     Venta[]
+
+  @@map("obras_sociales")
+}
+
+// ── Paciente ─────────────────────────────────────────────────
+
+model Paciente {
+  id                     String        @id @default(uuid()) @db.Uuid
+  nombre                 String
+  documento              String        @unique
+  tipoDocumento          TipoDocumento @default(dni) @map("tipo_documento")
+  fechaNacimiento        DateTime?     @map("fecha_nacimiento")
+  telefono               String?
+  email                  String?
+  obraSocialId           String?       @map("obra_social_id") @db.Uuid
+  numeroAfiliado         String?       @map("numero_afiliado")
+  observacionesClinicas  String?       @map("observaciones_clinicas")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  // Relaciones
+  obraSocial  ObraSocial? @relation(fields: [obraSocialId], references: [id])
+  ventas      Venta[]
+
+  @@index([documento])
+  @@map("pacientes")
+}
+
+enum TipoDocumento {
+  dni
+  cedula
+  pasaporte
+  libreta_civica
+}
+
+// ── Usuario ──────────────────────────────────────────────────
+
+model Usuario {
+  id           String     @id @default(uuid()) @db.Uuid
+  nombre       String
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  rol          RolUsuario
+  activo       Boolean    @default(true)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  ventas       Venta[]
+  alertasAck   AlertaInventario[] @relation("AlertaAck")
+
+  @@map("usuarios")
+}
+
+enum RolUsuario {
+  admin
+  farmaceutico
+  cajero
+  deposito
+  consulta
+}
+
+// ── Venta ────────────────────────────────────────────────────
+
+model Venta {
+  id               String        @id @default(uuid()) @db.Uuid
+  numeroVenta      String        @unique @map("numero_venta")
+  pacienteId       String?       @map("paciente_id") @db.Uuid
+  obraSocialId     String?       @map("obra_social_id") @db.Uuid
+  usuarioId        String        @map("usuario_id") @db.Uuid
+  estado           EstadoVenta   @default(completada)
+  subtotal         Decimal       @db.Decimal(10, 2)
+  totalDescuentos  Decimal       @map("total_descuentos") @db.Decimal(10, 2)
+  totalCobertura   Decimal       @map("total_cobertura") @db.Decimal(10, 2)
+  totalCopago      Decimal       @map("total_copago") @db.Decimal(10, 2)
+  totalFinal       Decimal       @map("total_final") @db.Decimal(10, 2)
+  metodoPago       MetodoPago    @map("metodo_pago")
+  observaciones    String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  // Relaciones
+  paciente    Paciente?   @relation(fields: [pacienteId], references: [id])
+  obraSocial  ObraSocial? @relation(fields: [obraSocialId], references: [id])
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  detalles    DetalleVenta[]
+
+  @@index([numeroVenta])
+  @@index([createdAt])
+  @@index([estado])
+  @@map("ventas")
+}
+
+enum EstadoVenta {
+  pendiente
+  completada
+  cancelada
+  nota_credito
+}
+
+enum MetodoPago {
+  efectivo
+  debito
+  credito
+  transferencia
+  mixto
+}
+
+// ── Detalle de Venta ─────────────────────────────────────────
+
+model DetalleVenta {
+  id                     String  @id @default(uuid()) @db.Uuid
+  ventaId                String  @map("venta_id") @db.Uuid
+  medicamentoId          String  @map("medicamento_id") @db.Uuid
+  loteId                 String  @map("lote_id") @db.Uuid
+  cantidad               Int
+  precioUnitario         Decimal @map("precio_unitario") @db.Decimal(10, 2)
+  subtotal               Decimal @db.Decimal(10, 2)
+  descuentoObraSocial    Decimal @default(0) @map("descuento_obra_social") @db.Decimal(10, 2)
+  montoCobertura         Decimal @map("monto_cobertura") @db.Decimal(10, 2)
+  montoCopago            Decimal @map("monto_copago") @db.Decimal(10, 2)
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  venta        Venta        @relation(fields: [ventaId], references: [id])
+  medicamento  Medicamento  @relation(fields: [medicamentoId], references: [id])
+  lote         Lote         @relation(fields: [loteId], references: [id])
+
+  @@index([ventaId])
+  @@index([loteId])
+  @@map("detalles_venta")
+}
+
+// ── Alerta de Inventario ─────────────────────────────────────
+
+model AlertaInventario {
+  id              String      @id @default(uuid()) @db.Uuid
+  tipo            TipoAlerta
+  medicamentoId   String      @map("medicamento_id") @db.Uuid
+  loteId          String?     @map("lote_id") @db.Uuid
+  mensaje         String
+  severidad       Severidad   @default(info)
+  acknowledged    Boolean     @default(false)
+  acknowledgedById String?    @map("acknowledged_by_id") @db.Uuid
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relaciones
+  medicamento     Medicamento @relation(fields: [medicamentoId], references: [id])
+  lote            Lote?       @relation(fields: [loteId], references: [id])
+  acknowledgedBy  Usuario?    @relation("AlertaAck", fields: [acknowledgedById], references: [id])
+
+  @@index([tipo])
+  @@index([acknowledged])
+  @@map("alertas_inventario")
+}
+
+enum TipoAlerta {
+  stock_bajo
+  stock_critico
+  vencimiento_proximo_30
+  vencimiento_proximo_60
+  vencimiento_proximo_90
+  lote_vencido
+  medicamento_sin_stock
+}
+
+enum Severidad {
+  info
+  warning
+  critical
+}

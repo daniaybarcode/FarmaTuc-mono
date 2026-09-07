@@ -1,0 +1,20 @@
+{
+  "name": "farmatuc-mono",
+  "private": true,
+  "description": "Sistema de Punto de Venta y Gestión de Inventario para Farmacia",
+  "scripts": {
+    "dev:api": "pnpm --filter @farmatuc/api dev",
+    "dev:web": "pnpm --filter @farmatuc/web dev",
+    "dev": "pnpm run --parallel dev:api dev:web",
+    "build": "pnpm run --parallel build:api build:web",
+    "build:api": "pnpm --filter @farmatuc/api build",
+    "build:web": "pnpm --filter @farmatuc/web build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
