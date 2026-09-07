@@ -79,11 +79,11 @@ docker compose up -d
 
 ## Próximos pasos
 
-1. [ ] Inicializar dependencies (`pnpm install`)
-2. [ ] Generar cliente Prisma (`pnpm --filter @farmatuc/api db:generate`)
-3. [ ] Crear migraciones (`pnpm --filter @farmatuc/api db:migrate`)
+1. [x] Inicializar dependencies (`pnpm install`)
+2. [x] Generar cliente Prisma (`pnpm --filter @farmatuc/api db:generate`)
+3. [ ] Crear migraciones (`pnpm --filter @farmatuc/api db:migrate` + `db:seed`)
 4. [ ] Endpoint de autenticación (JWT)
-5. [ ] CRUD de Medicamentos con búsqueda por principio activo
+5. [x] CRUD de Medicamentos con búsqueda por principio activo — `GET/POST/PUT/DELETE /api/medicamentos`, `?q=` busca principioActivo (primario), nombreComercial y codigoBarras; soft delete (`activo=false`); validación zod
 6. [ ] Ingesta de lotes con validación de vencimiento
 7. [ ] Servicio de venta con lógica FIFO
 8. [ ] Cálculo de cobertura por obra social
