@@ -35,4 +35,7 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# Tooling (local, machine-specific)
+.atl/
+
 # Note: prisma/migrations/ IS versioned on purpose — it is part of the schema history.
