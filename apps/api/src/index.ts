@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { prisma } from "./lib/prisma.js";
 import { errorHandler } from "./middleware/error.js";
 import medicamentosRouter from "./routes/medicamentos.js";
+import lotesRouter from "./routes/lotes.js";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/medicamentos", medicamentosRouter);
+app.use("/api/lotes", lotesRouter);
 
 app.use(errorHandler);
 
