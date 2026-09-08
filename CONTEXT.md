@@ -85,7 +85,7 @@ docker compose up -d
 4. [ ] Endpoint de autenticación (JWT)
 5. [x] CRUD de Medicamentos con búsqueda por principio activo — `GET/POST/PUT/DELETE /api/medicamentos`, `?q=` busca principioActivo (primario), nombreComercial y codigoBarras; soft delete (`activo=false`); validación zod
 6. [x] Ingesta de lotes con validación de vencimiento — `GET/POST/PUT/DELETE /api/lotes`; vencimiento debe ser hoy/futuro, fabricación ≤ vencimiento, duplicado `(medicamentoId, numeroLote)` → 409, `stockInicial` = `stock` al crear, estado derivado (agotado/vencido/disponible), DELETE marca `retirado` (nunca borra), filtros `medicamentoId`/`estado`/`fechaVencimientoLte`, seed con 10 lotes (1 vencido, 1 agotado)
-7. [ ] Servicio de venta con lógica FIFO
+7. [x] Servicio de venta con lógica FIFO — `POST /api/ventas` registra venta atómica descontando stock riesgo-consistente (`updateMany` condicional), un `DetalleVenta` por lote usado (vencimiento ASC), excluye vencidos, `VTA-YYYY-NNNNNN`, montos `Decimal`, stock insuficiente → 409, ventas impermutables (solo GET); `GET /api/ventas` paginado con filtro `desde`/`hasta`, `GET /api/ventas/:id`; seed crea usuario de sistema (placeholder hasta auth JWT); cobertura de obra social aún en 0 (paso 8); tests con vitest
 8. [ ] Cálculo de cobertura por obra social
 9. [ ] Dashboard de alertas (stock bajo, vencimientos 30/60/90 días)
 10. [ ] POS Frontend — interfaz de caja
