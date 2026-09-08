@@ -26,8 +26,8 @@ const createBodySchema = z.object({
   // Override manual de obra social: si el paciente no tiene OS asignada
   // pero se debe aplicar cobertura, se pasa el ID directamente.
   obraSocialId: z.string().uuid("ID de obra social inválido").optional(),
-  // No hay sistema de autenticación todavía: se acepta usuarioId opcional
-  // para registrar quién vende. Si no se provee se usa un valor por defecto.
+  // Override manual de usuario de la venta. La prioridad es:
+  // body.usuarioId → req.userId (token JWT) → usuario de sistema.
   usuarioId: z.string().uuid("ID de usuario inválido").optional(),
 });
 

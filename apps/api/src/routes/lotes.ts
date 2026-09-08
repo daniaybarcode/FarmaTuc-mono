@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { asyncHandler } from "../middleware/error.js";
+import { requireAuth, requireRol } from "../middleware/auth.js";
 import {
   listLotesSchema,
   createLoteSchema,
@@ -17,6 +18,8 @@ import {
 
 const router = Router();
 
+router.use(requireAuth);
+
 router.get(
   "/",
   validate(listLotesSchema),
@@ -31,18 +34,21 @@ router.get(
 
 router.post(
   "/",
+  requireRol("admin", "farmaceutico", "deposito"),
   validate(createLoteSchema),
   asyncHandler(createLote),
 );
 
 router.put(
   "/:id",
+  requireRol("admin", "farmaceutico", "deposito"),
   validate(updateLoteSchema),
   asyncHandler(updateLote),
 );
 
 router.delete(
   "/:id",
+  requireRol("admin", "farmaceutico", "deposito"),
   validate(idParamSchema),
   asyncHandler(deleteLote),
 );

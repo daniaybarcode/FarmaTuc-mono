@@ -6,6 +6,7 @@ import { errorHandler } from "./middleware/error.js";
 import medicamentosRouter from "./routes/medicamentos.js";
 import lotesRouter from "./routes/lotes.js";
 import ventasRouter from "./routes/ventas.js";
+import authRouter from "./routes/auth.js";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/medicamentos", medicamentosRouter);
 app.use("/api/lotes", lotesRouter);
 app.use("/api/ventas", ventasRouter);
+app.use("/api/auth", authRouter);
 
 app.use(errorHandler);
 

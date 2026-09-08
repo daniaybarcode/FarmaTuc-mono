@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -15,14 +16,25 @@ async function main() {
   await prisma.paciente.deleteMany();
   await prisma.obraSocial.deleteMany();
 
-  // Usuario de sistema sin contraseña real (placeholder hasta auth JWT).
-  // El servicio de ventas lo usa como fallback cuando no hay usuario logueado.
+  // Usuario de sistema: fallback de usuario para ventas sin auth.
+  // Contraseña "sistema" (hash real generado en runtime con bcrypt sync).
   await prisma.usuario.create({
     data: {
       id: "00000000-0000-0000-0000-000000000000",
       nombre: "Sistema",
       email: "sistema@farmatuc.local",
-      passwordHash: "sin-auth-placeholder",
+      passwordHash: bcrypt.hashSync("sistema", 10),
+      rol: "admin",
+    },
+  });
+
+  // Usuario admin de demo para probar autenticación JWT.
+  // Credenciales demo: admin@farmatuc.local / admin123
+  await prisma.usuario.create({
+    data: {
+      nombre: "Administrador",
+      email: "admin@farmatuc.local",
+      passwordHash: bcrypt.hashSync("admin123", 10),
       rol: "admin",
     },
   });
@@ -371,7 +383,7 @@ async function main() {
   ]);
 
   console.log(
-    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes, ${obrasSociales.length} obras sociales, 4 pacientes y usuario de sistema`,
+    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes, ${obrasSociales.length} obras sociales, 4 pacientes y 2 usuarios (sistema + admin demo). Credenciales admin: admin@farmatuc.local / admin123`,
   );
 }
 

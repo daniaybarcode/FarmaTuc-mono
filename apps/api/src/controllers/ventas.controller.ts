@@ -82,7 +82,7 @@ export async function createVenta(
   req: Request<{}, unknown, CreateVentaInput>,
   res: Response,
 ): Promise<void> {
-  const venta = await registrarVenta(req.body);
+  const venta = await registrarVenta(req.body, req.userId);
   res.status(201).json(serializarVenta(venta));
 }
 

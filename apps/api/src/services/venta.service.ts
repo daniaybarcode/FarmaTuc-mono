@@ -5,8 +5,8 @@ import { startOfToday } from "../schemas/lote.schema.js";
 import type { CreateVentaInput, VentaItemInput } from "../schemas/venta.schema.js";
 
 /**
- * Placeholder de usuario mientras no existe el sistema de autenticación.
- * Una vez exista auth JWT, este valor vendrá del token del cajero logueado.
+ * Fallback de usuario de sistema. Se usa cuando no hay body.usuarioId
+ * ni usuario autenticado (p.ej. vents de sistema/integración).
  */
 const USUARIO_FALLBACK = "00000000-0000-0000-0000-000000000000";
 
@@ -183,14 +183,23 @@ function generarNumeroVenta(count: number): string {
  * venta y detalles) corre dentro de una única transacción interactiva.
  * Si cualquier paso falla (stock insuficiente, conflicto de carrera,
  * número de venta duplicado) Prisma hace rollback de TODO.
+ *
+ * El parámetro opcional `usuarioIdAutenticado` viene del token JWT del
+ * cajero logueado. La prioridad de resolución del usuario de la venta es:
+ *   1. `input.usuarioId` (override explícito en el body — prioridad máxima)
+ *   2. `usuarioIdAutenticado` (usuario del token)
+ *   3. `USUARIO_FALLBACK` (usuario de sistema)
  */
 export type VentaRegistrada = Prisma.VentaGetPayload<{
   include: typeof VENTA_COMPLETA.include;
 }>;
 
-export async function registrarVenta(input: CreateVentaInput): Promise<VentaRegistrada> {
+export async function registrarVenta(
+  input: CreateVentaInput,
+  usuarioIdAutenticado?: string,
+): Promise<VentaRegistrada> {
   return prisma.$transaction(async (tx) => {
-    const usuarioId = input.usuarioId ?? USUARIO_FALLBACK;
+    const usuarioId = input.usuarioId ?? usuarioIdAutenticado ?? USUARIO_FALLBACK;
 
     // ── Resolución de paciente ──────────────────────────────────
     let pacienteObraSocialId: string | null = null;
