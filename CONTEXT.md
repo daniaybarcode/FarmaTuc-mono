@@ -84,7 +84,7 @@ docker compose up -d
 3. [ ] Crear migraciones (`pnpm --filter @farmatuc/api db:migrate` + `db:seed`)
 4. [ ] Endpoint de autenticación (JWT)
 5. [x] CRUD de Medicamentos con búsqueda por principio activo — `GET/POST/PUT/DELETE /api/medicamentos`, `?q=` busca principioActivo (primario), nombreComercial y codigoBarras; soft delete (`activo=false`); validación zod
-6. [ ] Ingesta de lotes con validación de vencimiento
+6. [x] Ingesta de lotes con validación de vencimiento — `GET/POST/PUT/DELETE /api/lotes`; vencimiento debe ser hoy/futuro, fabricación ≤ vencimiento, duplicado `(medicamentoId, numeroLote)` → 409, `stockInicial` = `stock` al crear, estado derivado (agotado/vencido/disponible), DELETE marca `retirado` (nunca borra), filtros `medicamentoId`/`estado`/`fechaVencimientoLte`, seed con 10 lotes (1 vencido, 1 agotado)
 7. [ ] Servicio de venta con lógica FIFO
 8. [ ] Cálculo de cobertura por obra social
 9. [ ] Dashboard de alertas (stock bajo, vencimientos 30/60/90 días)
