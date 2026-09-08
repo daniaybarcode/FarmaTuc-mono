@@ -11,6 +11,19 @@ function addMonths(base: Date, months: number): Date {
 async function main() {
   await prisma.lote.deleteMany();
   await prisma.medicamento.deleteMany();
+  await prisma.usuario.deleteMany();
+
+  // Usuario de sistema sin contraseña real (placeholder hasta auth JWT).
+  // El servicio de ventas lo usa como fallback cuando no hay usuario logueado.
+  await prisma.usuario.create({
+    data: {
+      id: "00000000-0000-0000-0000-000000000000",
+      nombre: "Sistema",
+      email: "sistema@farmatuc.local",
+      passwordHash: "sin-auth-placeholder",
+      rol: "admin",
+    },
+  });
 
   const medicamentos = [
     {
@@ -272,7 +285,7 @@ async function main() {
   }
 
   console.log(
-    `Seed completado: ${medicamentos.length} medicamentos y ${lotesCreados} lotes creados`,
+    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes y usuario de sistema`,
   );
 }
 
