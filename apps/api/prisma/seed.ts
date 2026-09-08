@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { generarAlertas } from "../src/services/alertas.service.js";
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,7 @@ async function main() {
   await prisma.usuario.deleteMany();
   await prisma.paciente.deleteMany();
   await prisma.obraSocial.deleteMany();
+  await prisma.alertaInventario.deleteMany();
 
   // Usuario de sistema: fallback de usuario para ventas sin auth.
   // Contraseña "sistema" (hash real generado en runtime con bcrypt sync).
@@ -382,8 +384,11 @@ async function main() {
     }),
   ]);
 
+  // ── Alertas de inventario ────────────────────────────────────
+  const alertasResultado = await generarAlertas(prisma);
+
   console.log(
-    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes, ${obrasSociales.length} obras sociales, 4 pacientes y 2 usuarios (sistema + admin demo). Credenciales admin: admin@farmatuc.local / admin123`,
+    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes, ${obrasSociales.length} obras sociales, 4 pacientes y 2 usuarios (sistema + admin demo). Alertas: ${alertasResultado.creadas} creadas, ${alertasResultado.cerradas} cerradas. Credenciales admin: admin@farmatuc.local / admin123`,
   );
 }
 
