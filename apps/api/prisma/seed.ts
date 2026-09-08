@@ -12,6 +12,8 @@ async function main() {
   await prisma.lote.deleteMany();
   await prisma.medicamento.deleteMany();
   await prisma.usuario.deleteMany();
+  await prisma.paciente.deleteMany();
+  await prisma.obraSocial.deleteMany();
 
   // Usuario de sistema sin contraseña real (placeholder hasta auth JWT).
   // El servicio de ventas lo usa como fallback cuando no hay usuario logueado.
@@ -284,8 +286,92 @@ async function main() {
     lotesCreados++;
   }
 
+  // ── Obras Sociales ─────────────────────────────────────────────
+  const obrasSociales = await Promise.all([
+    prisma.obraSocial.create({
+      data: {
+        nombre: "Obra Social Simple",
+        sigla: "OSS",
+        porcentajeCobertura: 40,
+        tieneTope: false,
+        restriccionPorCategoria: false,
+        requiereAfiliado: true,
+        activa: true,
+      },
+    }),
+    prisma.obraSocial.create({
+      data: {
+        nombre: "OS con Tope",
+        sigla: "OSCT",
+        porcentajeCobertura: 80,
+        tieneTope: true,
+        topeMaximoPorMedicamento: 3000,
+        restriccionPorCategoria: false,
+        requiereAfiliado: true,
+        activa: true,
+      },
+    }),
+    prisma.obraSocial.create({
+      data: {
+        nombre: "OS Categorias",
+        sigla: "OSCAT",
+        porcentajeCobertura: 60,
+        tieneTope: false,
+        restriccionPorCategoria: true,
+        // Cubre solo Antibióticos — los demás medicamentos del seed quedan fuera
+        categoriasCubiertas: ["Antibioticos"],
+        requiereAfiliado: false,
+        activa: true,
+      },
+    }),
+  ]);
+
+  const [osSimple, osConTope, osCategorias] = obrasSociales;
+
+  // ── Pacientes ──────────────────────────────────────────────────
+  await Promise.all([
+    // Paciente con OS Simple y número de afiliado
+    prisma.paciente.create({
+      data: {
+        nombre: "María García",
+        documento: "30123456",
+        tipoDocumento: "dni",
+        obraSocialId: osSimple.id,
+        numeroAfiliado: "OSS-001",
+      },
+    }),
+    // Paciente con OS Simple SIN número de afiliado (gate de afiliado)
+    prisma.paciente.create({
+      data: {
+        nombre: "Carlos López",
+        documento: "30789012",
+        tipoDocumento: "dni",
+        obraSocialId: osSimple.id,
+        numeroAfiliado: null,
+      },
+    }),
+    // Paciente con OS Categorias
+    prisma.paciente.create({
+      data: {
+        nombre: "Ana Martínez",
+        documento: "27456789",
+        tipoDocumento: "dni",
+        obraSocialId: osCategorias.id,
+        numeroAfiliado: "OSCAT-001",
+      },
+    }),
+    // Paciente sin obra social
+    prisma.paciente.create({
+      data: {
+        nombre: "Pedro Sánchez",
+        documento: "40111222",
+        tipoDocumento: "dni",
+      },
+    }),
+  ]);
+
   console.log(
-    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes y usuario de sistema`,
+    `Seed completado: ${medicamentos.length} medicamentos, ${lotesCreados} lotes, ${obrasSociales.length} obras sociales, 4 pacientes y usuario de sistema`,
   );
 }
 

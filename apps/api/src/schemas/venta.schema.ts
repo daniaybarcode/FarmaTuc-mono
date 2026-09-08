@@ -23,6 +23,9 @@ const createBodySchema = z.object({
   }),
   pacienteId: z.string().uuid("ID de paciente inválido").nullable().optional(),
   observaciones: z.string().nullable().optional(),
+  // Override manual de obra social: si el paciente no tiene OS asignada
+  // pero se debe aplicar cobertura, se pasa el ID directamente.
+  obraSocialId: z.string().uuid("ID de obra social inválido").optional(),
   // No hay sistema de autenticación todavía: se acepta usuarioId opcional
   // para registrar quién vende. Si no se provee se usa un valor por defecto.
   usuarioId: z.string().uuid("ID de usuario inválido").optional(),

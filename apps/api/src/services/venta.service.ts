@@ -13,7 +13,11 @@ const USUARIO_FALLBACK = "00000000-0000-0000-0000-000000000000";
 const DETALLE_BASICO = {
   include: {
     medicamento: {
-      select: { nombreComercial: true, principioActivo: true },
+      select: {
+        nombreComercial: true,
+        principioActivo: true,
+        categoriaTerapeutica: true,
+      },
     },
     lote: {
       select: { numeroLote: true, fechaVencimiento: true },
@@ -41,6 +45,7 @@ interface DetalleConstruido {
   cantidad: number;
   precioUnitario: Prisma.Decimal;
   subtotal: Prisma.Decimal;
+  categoriaTerapeutica: string;
 }
 
 interface ConsumoLote {
@@ -82,7 +87,12 @@ async function construirDetallesPorItem(
 ): Promise<{ detalles: DetalleConstruido[]; subtotalItem: Prisma.Decimal }> {
   const medicamento = await tx.medicamento.findUnique({
     where: { id: item.medicamentoId },
-    select: { id: true, precioUnitario: true, nombreComercial: true },
+    select: {
+      id: true,
+      precioUnitario: true,
+      nombreComercial: true,
+      categoriaTerapeutica: true,
+    },
   });
 
   if (!medicamento) {
@@ -148,6 +158,7 @@ async function construirDetallesPorItem(
       cantidad: paso.cantidad,
       precioUnitario,
       subtotal,
+      categoriaTerapeutica: medicamento.categoriaTerapeutica,
     });
   }
 
@@ -181,16 +192,61 @@ export async function registrarVenta(input: CreateVentaInput): Promise<VentaRegi
   return prisma.$transaction(async (tx) => {
     const usuarioId = input.usuarioId ?? USUARIO_FALLBACK;
 
+    // ── Resolución de paciente ──────────────────────────────────
+    let pacienteObraSocialId: string | null = null;
+    let pacienteNumeroAfiliado: string | null = null;
+
     if (input.pacienteId) {
       const paciente = await tx.paciente.findUnique({
         where: { id: input.pacienteId },
-        select: { id: true },
+        select: { id: true, obraSocialId: true, numeroAfiliado: true },
       });
       if (!paciente) {
         throw new AppError(404, "Paciente no encontrado");
       }
+      pacienteObraSocialId = paciente.obraSocialId;
+      pacienteNumeroAfiliado = paciente.numeroAfiliado;
     }
 
+    // ── Resolución de obra social ───────────────────────────────
+    let obraSocial: {
+      id: string;
+      activa: boolean;
+      porcentajeCobertura: Prisma.Decimal;
+      tieneTope: boolean;
+      topeMaximoPorMedicamento: Prisma.Decimal | null;
+      restriccionPorCategoria: boolean;
+      categoriasCubiertas: string[];
+      requiereAfiliado: boolean;
+    } | null = null;
+
+    const obraSocialId = input.obraSocialId ?? pacienteObraSocialId;
+
+    if (obraSocialId) {
+      const found = await tx.obraSocial.findUnique({
+        where: { id: obraSocialId },
+      });
+
+      if (!found) {
+        throw new AppError(404, "Obra social no encontrada");
+      }
+
+      if (!found.activa) {
+        // Obra social inactiva → sin cobertura (no es error)
+        obraSocial = null;
+      } else {
+        obraSocial = found;
+      }
+    }
+
+    // Gate de afiliado: si requiereAfiliado y el paciente no tiene número
+    // de afiliado → sin cobertura. (El número de afiliado solo puede venir
+    // del paciente; un override por body sin paciente nunca trae afiliado.)
+    if (obraSocial?.requiereAfiliado && !pacienteNumeroAfiliado) {
+      obraSocial = null;
+    }
+
+    // ── Construcción de detalles (FIFO) ─────────────────────────
     let subtotal = new Prisma.Decimal(0);
     const detalles: DetalleConstruido[] = [];
 
@@ -201,6 +257,71 @@ export async function registrarVenta(input: CreateVentaInput): Promise<VentaRegi
       subtotal = subtotal.add(subtotalItem);
     }
 
+    // ── Cálculo de cobertura por detalle ────────────────────────
+    const detallesConCobertura = detalles.map((d) => {
+      if (!obraSocial) {
+        // Sin cobertura: el paciente paga el subtotal completo.
+        // Se mantiene la invariante subtotal = montoCobertura + montoCopago.
+        return {
+          ...d,
+          montoCobertura: new Prisma.Decimal(0),
+          descuentoObraSocial: new Prisma.Decimal(0),
+          montoCopago: d.subtotal,
+        };
+      }
+
+      // Restricción por categoría: si aplica, solo cubre categorías en la lista
+      if (
+        obraSocial.restriccionPorCategoria &&
+        !obraSocial.categoriasCubiertas.includes(d.categoriaTerapeutica)
+      ) {
+        return {
+          ...d,
+          montoCobertura: new Prisma.Decimal(0),
+          descuentoObraSocial: new Prisma.Decimal(0),
+          montoCopago: d.subtotal,
+        };
+      }
+
+      // Cobertura bruta = subtotal × porcentaje / 100
+      let coberturaBruta = d.subtotal
+        .mul(obraSocial.porcentajeCobertura)
+        .div(100)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+      // Tope: si tiene tope, la cobertura no puede superar el tope máximo
+      if (obraSocial.tieneTope && obraSocial.topeMaximoPorMedicamento != null) {
+        if (coberturaBruta.greaterThan(obraSocial.topeMaximoPorMedicamento)) {
+          coberturaBruta = obraSocial.topeMaximoPorMedicamento;
+        }
+      }
+
+      const montoCopago = d.subtotal
+        .sub(coberturaBruta)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+      return {
+        ...d,
+        montoCobertura: coberturaBruta,
+        descuentoObraSocial: coberturaBruta,
+        montoCopago,
+      };
+    });
+
+    // ── Totales de la venta ─────────────────────────────────────
+    const totalCobertura = detallesConCobertura.reduce(
+      (acc, d) => acc.add(d.montoCobertura),
+      new Prisma.Decimal(0),
+    );
+    const totalDescuentos = detallesConCobertura.reduce(
+      (acc, d) => acc.add(d.descuentoObraSocial),
+      new Prisma.Decimal(0),
+    );
+    const totalCopago = detallesConCobertura.reduce(
+      (acc, d) => acc.add(d.montoCopago),
+      new Prisma.Decimal(0),
+    );
+
     const cantidadVentas = await tx.venta.count();
     const numeroVenta = generarNumeroVenta(cantidadVentas);
 
@@ -208,26 +329,26 @@ export async function registrarVenta(input: CreateVentaInput): Promise<VentaRegi
       data: {
         numeroVenta,
         pacienteId: input.pacienteId ?? null,
-        obraSocialId: null,
+        obraSocialId: obraSocial?.id ?? null,
         usuarioId,
         estado: "completada",
         subtotal,
-        totalDescuentos: new Prisma.Decimal(0),
-        totalCobertura: new Prisma.Decimal(0),
-        totalCopago: new Prisma.Decimal(0),
-        totalFinal: subtotal,
+        totalDescuentos,
+        totalCobertura,
+        totalCopago,
+        totalFinal: subtotal.sub(totalCobertura),
         metodoPago: input.metodoPago,
         observaciones: input.observaciones ?? null,
         detalles: {
-          create: detalles.map((d) => ({
+          create: detallesConCobertura.map((d) => ({
             medicamentoId: d.medicamentoId,
             loteId: d.loteId,
             cantidad: d.cantidad,
             precioUnitario: d.precioUnitario,
             subtotal: d.subtotal,
-            descuentoObraSocial: new Prisma.Decimal(0),
-            montoCobertura: new Prisma.Decimal(0),
-            montoCopago: new Prisma.Decimal(0),
+            descuentoObraSocial: d.descuentoObraSocial,
+            montoCobertura: d.montoCobertura,
+            montoCopago: d.montoCopago,
           })),
         },
       },
