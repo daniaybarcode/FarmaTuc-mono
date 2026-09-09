@@ -8,6 +8,7 @@ import lotesRouter from "./routes/lotes.js";
 import ventasRouter from "./routes/ventas.js";
 import authRouter from "./routes/auth.js";
 import alertasRouter from "./routes/alertas.js";
+import pacientesRouter from "./routes/pacientes.js";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/lotes", lotesRouter);
 app.use("/api/ventas", ventasRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/alertas", alertasRouter);
+app.use("/api/pacientes", pacientesRouter);
 
 app.use(errorHandler);
 

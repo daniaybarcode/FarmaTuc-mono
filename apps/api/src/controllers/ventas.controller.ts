@@ -35,6 +35,8 @@ interface VentaSerializada {
   updatedAt: string;
   pacienteId: string | null;
   obraSocialId: string | null;
+  paciente: { nombre: string; documento: string } | null;
+  obraSocial: { nombre: string } | null;
   detalles: DetalleSerializado[];
 }
 
@@ -59,6 +61,17 @@ function serializarVenta(venta: VentaRegistrada): VentaSerializada {
     updatedAt: venta.updatedAt.toISOString(),
     pacienteId: venta.pacienteId,
     obraSocialId: venta.obraSocialId,
+    paciente: venta.paciente
+      ? {
+          nombre: venta.paciente.nombre,
+          documento: venta.paciente.documento,
+        }
+      : null,
+    obraSocial: venta.obraSocial
+      ? {
+          nombre: venta.obraSocial.nombre,
+        }
+      : null,
     detalles: venta.detalles.map((d) => ({
       id: d.id,
       cantidad: d.cantidad,

@@ -31,6 +31,9 @@ const VENTA_COMPLETA = {
     paciente: {
       select: { nombre: true, documento: true },
     },
+    obraSocial: {
+      select: { nombre: true },
+    },
     usuario: {
       select: { nombre: true, email: true },
     },
