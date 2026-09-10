@@ -1,12 +1,17 @@
 import type { Request, Response } from "express";
-import { buscarPacientes } from "../services/pacientes.service.js";
-import { listPacientesQuerySchema } from "../schemas/paciente.schema.js";
+import {
+  buscarPacientes,
+  crearPaciente,
+  actualizarPaciente,
+  type PacienteConObraSocial,
+} from "../services/pacientes.service.js";
+import {
+  listPacientesQuerySchema,
+  type CrearPacienteInput,
+  type ActualizarPacienteInput,
+} from "../schemas/paciente.schema.js";
 
-/**
- * Serializa la obra social del paciente convirtiendo los Decimal
- * (porcentajeCobertura, topeMaximoPorMedicamento) a number.
- */
-function serializarObraSocial(obraSocial: {
+interface ObraSocialPlana {
   id: string;
   nombre: string;
   sigla: string | null;
@@ -16,7 +21,13 @@ function serializarObraSocial(obraSocial: {
   requiereAfiliado: boolean;
   restriccionPorCategoria: boolean;
   categoriasCubiertas: string[];
-}) {
+}
+
+/**
+ * Serializa la obra social del paciente convirtiendo los Decimal
+ * (porcentajeCobertura, topeMaximoPorMedicamento) a number.
+ */
+function serializarObraSocial(obraSocial: ObraSocialPlana) {
   return {
     id: obraSocial.id,
     nombre: obraSocial.nombre,
@@ -30,6 +41,24 @@ function serializarObraSocial(obraSocial: {
     requiereAfiliado: obraSocial.requiereAfiliado,
     restriccionPorCategoria: obraSocial.restriccionPorCategoria,
     categoriasCubiertas: obraSocial.categoriasCubiertas,
+  };
+}
+
+function serializarPaciente(p: PacienteConObraSocial) {
+  return {
+    id: p.id,
+    nombre: p.nombre,
+    documento: p.documento,
+    tipoDocumento: p.tipoDocumento,
+    fechaNacimiento: p.fechaNacimiento,
+    telefono: p.telefono,
+    email: p.email,
+    obraSocialId: p.obraSocialId,
+    numeroAfiliado: p.numeroAfiliado,
+    observacionesClinicas: p.observacionesClinicas,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    obraSocial: p.obraSocial ? serializarObraSocial(p.obraSocial) : null,
   };
 }
 
@@ -56,4 +85,20 @@ export async function listarPacientes(
     limit: result.limit,
     offset: result.offset,
   });
+}
+
+export async function crearPacienteHandler(
+  req: Request<{}, unknown, CrearPacienteInput>,
+  res: Response,
+): Promise<void> {
+  const paciente = await crearPaciente(req.body);
+  res.status(201).json(serializarPaciente(paciente));
+}
+
+export async function actualizarPacienteHandler(
+  req: Request<{ id: string }, unknown, ActualizarPacienteInput>,
+  res: Response,
+): Promise<void> {
+  const paciente = await actualizarPaciente(req.params.id, req.body);
+  res.json(serializarPaciente(paciente));
 }
