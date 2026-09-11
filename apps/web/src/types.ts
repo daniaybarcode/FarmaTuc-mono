@@ -143,6 +143,12 @@ export interface Paciente {
   obraSocialId: string | null;
   numeroAfiliado: string | null;
   obraSocial: ObraSocialResumida | null;
+  // Solo presentes en las respuestas POST/PUT (el listado no las expone).
+  fechaNacimiento?: string | null;
+  email?: string | null;
+  observacionesClinicas?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ── Detalle de venta (serializado por ventas.controller) ─────
@@ -210,4 +216,110 @@ export interface ResumenAlertas {
   porTipo: Record<string, number>;
   porSeveridad: Record<string, number>;
   sinAcknowledged: number;
+}
+
+// ── Obra social (detalle completo, para el backoffice) ────────
+
+export interface ObraSocial {
+  id: string;
+  nombre: string;
+  sigla: string | null;
+  porcentajeCobertura: number;
+  tieneTope: boolean;
+  topeMaximoPorMedicamento: number | null;
+  restriccionPorCategoria: boolean;
+  categoriasCubiertas: string[];
+  requiereAfiliado: boolean;
+  activa: boolean;
+  observaciones: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Usuario (nunca expone passwordHash) ───────────────────────
+
+export interface Usuario {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: Rol;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Inputs de creación/actualización del backoffice ───────────
+
+export interface MedicamentoInput {
+  nombreComercial: string;
+  principioActivo: string;
+  concentracion: string;
+  formaFarmaceutica: FormaFarmaceutica;
+  laboratorio: string;
+  codigoBarras?: string | null;
+  codigoANMAT?: string | null;
+  requiereReceta?: boolean;
+  precioUnitario: number;
+  activo?: boolean;
+  categoriaTerapeutica: string;
+  stockMinimo?: number;
+  observaciones?: string | null;
+}
+
+export interface LoteInput {
+  medicamentoId: string;
+  numeroLote: string;
+  fechaVencimiento: string;
+  fechaFabricacion: string;
+  stock?: number;
+  precioCompra: number;
+  proveedor: string;
+  numeroFactura?: string | null;
+}
+
+export interface LoteUpdateInput {
+  numeroLote?: string;
+  fechaVencimiento?: string;
+  fechaFabricacion?: string;
+  proveedor?: string;
+  numeroFactura?: string | null;
+  precioCompra?: number;
+}
+
+export interface ObraSocialInput {
+  nombre: string;
+  sigla?: string;
+  porcentajeCobertura: number;
+  tieneTope?: boolean;
+  topeMaximoPorMedicamento?: number | null;
+  restriccionPorCategoria?: boolean;
+  categoriasCubiertas?: string[];
+  requiereAfiliado?: boolean;
+  activa?: boolean;
+  observaciones?: string | null;
+}
+
+export interface PacienteInput {
+  nombre: string;
+  documento: string;
+  tipoDocumento?: string;
+  fechaNacimiento?: string;
+  telefono?: string;
+  email?: string;
+  obraSocialId?: string | null;
+  numeroAfiliado?: string | null;
+  observacionesClinicas?: string | null;
+}
+
+export interface UsuarioUpdateInput {
+  nombre?: string;
+  rol?: Rol;
+  activo?: boolean;
+}
+
+export interface NuevoUsuarioInput {
+  nombre: string;
+  email: string;
+  password: string;
+  rol: Rol;
 }

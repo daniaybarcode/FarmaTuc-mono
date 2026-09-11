@@ -7,6 +7,7 @@ import {
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../lib/api";
 import { formatearMoneda } from "../lib/format";
+import { useDebouncedValue } from "../lib/hooks";
 import {
   Badge,
   Button,
@@ -40,15 +41,6 @@ const METODOS: Array<{ valor: MetodoPago; etiqueta: string }> = [
 
 function redondear2(n: number): number {
   return Math.round(n * 100) / 100;
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-  return debounced;
 }
 
 export default function PosPage() {

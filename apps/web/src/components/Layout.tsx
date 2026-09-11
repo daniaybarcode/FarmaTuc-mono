@@ -1,12 +1,17 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "./ui";
+import type { Rol } from "../types";
 
 const NAV_ITEMS = [
   { to: "/", label: "Caja", end: true },
   { to: "/ventas", label: "Ventas", end: false },
   { to: "/alertas", label: "Alertas", end: false },
+  { to: "/admin", label: "Backoffice", end: false },
 ];
+
+// Roles que pueden operar el backoffice (CRUD de medicamentos/lotes).
+const ROLES_BACKOFFICE: Rol[] = ["admin", "farmaceutico", "deposito"];
 
 function navClass({ isActive }: { isActive: boolean }): string {
   return `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -19,6 +24,12 @@ function navClass({ isActive }: { isActive: boolean }): string {
 export default function Layout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+
+  const puedeBackoffice =
+    usuario !== null && ROLES_BACKOFFICE.includes(usuario.rol);
+  const navItems = puedeBackoffice
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.to !== "/admin");
 
   function handleLogout() {
     logout();
@@ -37,7 +48,7 @@ export default function Layout() {
           </Link>
 
           <nav className="flex flex-wrap items-center gap-1">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

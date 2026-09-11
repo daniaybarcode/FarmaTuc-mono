@@ -88,6 +88,22 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Bloquea rutas por rol: si el rol del usuario no está en la lista → / */
+export function RequireRol({
+  roles,
+  children,
+}: {
+  roles: Rol[];
+  children: ReactNode;
+}) {
+  const { token, rol } = useAuth();
+
+  if (!token) return <Navigate to="/login" replace />;
+  if (!rol || !roles.includes(rol)) return <Navigate to="/" replace />;
+
+  return <>{children}</>;
+}
+
 /** Redirect del comodín: /login si no hay sesión, / si hay. */
 export function RootRedirect() {
   const { token } = useAuth();
