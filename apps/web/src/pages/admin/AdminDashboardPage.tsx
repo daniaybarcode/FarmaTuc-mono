@@ -11,6 +11,7 @@ import {
 import { EstadoLoteBadge } from "./shared";
 import type {
   EstadoLote,
+  LicenciaEstado,
   ListaRespuesta,
   Lote,
   Medicamento,
@@ -66,6 +67,10 @@ export default function AdminDashboardPage() {
             query: { activo: "true", limit: 1 },
           });
           resultado.usuariosActivos = usuarios.total;
+
+          const lic = await api<LicenciaEstado>("/licencias/estado");
+          resultado.licenciaInstalada = lic.instalada ? 1 : 0;
+          resultado.licenciaVencida = lic.vencida ? 1 : 0;
         }
 
         if (!cancelado) setCounts(resultado);
@@ -113,6 +118,28 @@ export default function AdminDashboardPage() {
       etiqueta: "Usuarios activos",
       valor: counts.usuariosActivos,
       tono: "bg-amber-50 text-amber-800",
+      soloAdmin: true,
+    },
+    {
+      to: "/admin/licencias",
+      etiqueta:
+        counts.licenciaVencida === 1
+          ? "Licencia VENCIDA"
+          : counts.licenciaInstalada === 1
+            ? "Licencia activa"
+            : "Sin licencia",
+      valor:
+        counts.licenciaVencida === 1
+          ? "!"
+          : counts.licenciaInstalada === 1
+            ? "OK"
+            : "—",
+      tono:
+        counts.licenciaVencida === 1
+          ? "bg-red-50 text-red-700"
+          : counts.licenciaInstalada === 1
+            ? "bg-emerald-50 text-emerald-700"
+            : "bg-slate-100 text-slate-600",
       soloAdmin: true,
     },
   ].filter((t) => !t.soloAdmin || esAdmin);

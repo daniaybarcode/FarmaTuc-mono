@@ -248,6 +248,31 @@ export interface Usuario {
   updatedAt: string;
 }
 
+// ── Licenciamiento offline ────────────────────────────────────
+
+export interface LicenciaEstado {
+  instalada: boolean;
+  cliente: string | null;
+  valida: boolean;
+  diasRestantes: number | null;
+  vencimiento: string | null;
+  dentroDe30Dias: boolean;
+  dentroDe15Dias: boolean;
+  vencida: boolean;
+  motivo: string | null;
+}
+
+export interface EmitirLicenciaInput {
+  installationId: string;
+  cliente: string;
+  emitidaA?: string;
+  fechaVencimiento: string;
+}
+
+export interface EmitirLicenciaResult {
+  licencia: string;
+}
+
 // ── Inputs de creación/actualización del backoffice ───────────
 
 export interface MedicamentoInput {

@@ -20,6 +20,7 @@ import AdminLotesPage from "./pages/admin/AdminLotesPage";
 import AdminObrasSocialesPage from "./pages/admin/AdminObrasSocialesPage";
 import AdminPacientesPage from "./pages/admin/AdminPacientesPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
+import AdminLicenciasPage from "./pages/admin/AdminLicenciasPage";
 
 const ROLES_BACKOFFICE: Array<"admin" | "farmaceutico" | "deposito"> = [
   "admin",
@@ -97,6 +98,14 @@ createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRol roles={ROLES_SOLO_ADMIN}>
                   <AdminUsuariosPage />
+                </RequireRol>
+              }
+            />
+            <Route
+              path="/admin/licencias"
+              element={
+                <RequireRol roles={ROLES_SOLO_ADMIN}>
+                  <AdminLicenciasPage />
                 </RequireRol>
               }
             />

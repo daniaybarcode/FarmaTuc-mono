@@ -1,7 +1,9 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "./ui";
-import type { Rol } from "../types";
+import { api } from "../lib/api";
+import type { LicenciaEstado, Rol } from "../types";
 
 const NAV_ITEMS = [
   { to: "/", label: "Caja", end: true },
@@ -21,6 +23,62 @@ function navClass({ isActive }: { isActive: boolean }): string {
   }`;
 }
 
+/** Banner global de aviso/vencimiento de licencia (no bloquea la UI). */
+function AvisoLicencia() {
+  const [estado, setEstado] = useState<LicenciaEstado | null>(null);
+
+  useEffect(() => {
+    let activo = true;
+    api<LicenciaEstado>("/licencias/estado")
+      .then((res) => {
+        if (activo) setEstado(res);
+      })
+      .catch(() => {
+        // Sin estado de licencia no se muestra banner: no molestar al usuario.
+      });
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  if (!estado) return null;
+
+  if (estado.vencida) {
+    return (
+      <div className="border-b border-red-700 bg-red-800 px-4 py-2 text-center text-sm font-medium text-white">
+        La licencia está vencida: no se pueden registrar ventas hasta renovar.{" "}
+        {estado.cliente && <span>({estado.cliente})</span>}
+      </div>
+    );
+  }
+
+  if (estado.dentroDe15Dias) {
+    return (
+      <div className="border-b border-amber-600 bg-amber-500 px-4 py-2 text-center text-sm font-medium text-white">
+        ⚠️ La licencia vence en menos de 15 días — contactá al proveedor para
+        renovar.{" "}
+        {estado.vencimiento && (
+          <span>(vence {estado.vencimiento})</span>
+        )}
+      </div>
+    );
+  }
+
+  if (estado.dentroDe30Dias) {
+    return (
+      <div className="border-b border-amber-600 bg-amber-400 px-4 py-2 text-center text-sm font-medium text-white">
+        ⚠️ La licencia vence en menos de 30 días — contactá al proveedor para
+        renovar.{" "}
+        {estado.vencimiento && (
+          <span>(vence {estado.vencimiento})</span>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function Layout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
@@ -38,6 +96,7 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
+      <AvisoLicencia />
       <header className="sticky top-0 z-20 bg-brand-800 text-white shadow-md">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
