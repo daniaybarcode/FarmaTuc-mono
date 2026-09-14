@@ -38,4 +38,8 @@ Thumbs.db
 # Tooling (local, machine-specific)
 .atl/
 
+# Licenciamiento offline: estado local de cada instalación (nunca a git).
+# Contiene installation.json, license-state.json y licencia.lic.
+apps/api/data/
+
 # Note: prisma/migrations/ IS versioned on purpose — it is part of the schema history.

@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { config } from "./config.js";
 import { prisma } from "./lib/prisma.js";
+import { inicializarLicencias } from "./lib/licencia-bootstrap.js";
 import { errorHandler } from "./middleware/error.js";
 import medicamentosRouter from "./routes/medicamentos.js";
 import lotesRouter from "./routes/lotes.js";
@@ -11,6 +12,7 @@ import alertasRouter from "./routes/alertas.js";
 import pacientesRouter from "./routes/pacientes.js";
 import obrasSocialesRouter from "./routes/obras-sociales.js";
 import usuariosRouter from "./routes/usuarios.js";
+import licenciasRouter from "./routes/licencias.js";
 
 const app = express();
 
@@ -29,10 +31,12 @@ app.use("/api/alertas", alertasRouter);
 app.use("/api/pacientes", pacientesRouter);
 app.use("/api/obras-sociales", obrasSocialesRouter);
 app.use("/api/usuarios", usuariosRouter);
+app.use("/api/licencias", licenciasRouter);
 
 app.use(errorHandler);
 
 app.listen(config.port, async () => {
+  inicializarLicencias();
   await prisma.$connect();
   console.log(`API escuchando en http://localhost:${config.port}`);
 });

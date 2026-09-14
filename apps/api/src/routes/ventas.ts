@@ -2,6 +2,7 @@ import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { asyncHandler } from "../middleware/error.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireLicenciaVigente } from "../middleware/licencia.js";
 import {
   createVentaSchema,
   getVentaSchema,
@@ -31,6 +32,7 @@ router.get(
 
 router.post(
   "/",
+  requireLicenciaVigente,
   validate(createVentaSchema),
   asyncHandler(createVenta),
 );
